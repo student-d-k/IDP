@@ -1,0 +1,36 @@
+Tikslas: Sukurkite pagrindinę įgūdžių dalijimosi platformą, kurioje vartotojai gali pridėti įgūdžius, įvertinti vienas kito žinias ir dalyvauti užsiėmimuose. Naudojant SQLAlchemy ir pagrindines komandinio darbo „GitHub“ priemones, ši sistema turi veikti per terminalą.
+Projekto funkcionalumas:
+Įgūdžių pridėjimas ir vertinimas:
+Pridėti įgūdžius: Vartotojai gali pridėti naujų įgūdžių į savo profilį su pagrindiniais atributais, pvz., pavadinimu, aprašymu ir lygio lygiu (pradedantysis, vidutinio lygio, ekspertas).
+Vertinimo sistema: Bendruomenės nariai gali vertinti kitų įgūdžius (pvz., peržiūrėję praktikos užsiėmimus), pridedant komentarų ir skiriant taškus, kad įgūdžiai kiltų nuo pradedančiojo iki eksperto.
+Užsiėmimų organizavimas ir dalyvavimas:
+Užsiėmimų kūrimas: Vartotojai gali organizuoti užsiėmimus, kuriuose jie moko savo įgūdžių. Užsiėmimai turi ribotą dalyvių skaičių.
+Registracija į užsiėmimus: Dalyviai gali registruotis į užsiėmimus. Jei vietos nėra, vartotojas gali pasirinkti būti įtrauktas į laukimo sąrašą.
+Vartotojų profiliai ir įgūdžių progresavimas:
+Profilio puslapis: Kiekvienas vartotojas turi profilį su savo įgūdžiais ir dalyvavimo istorija.
+Pasiekimai: Už tam tikrą skaičių užsiėmimų arba teigiamų vertinimų, vartotojai gauna virtualius ženkliukus.
+Turint tam tikrą kiekį ženkliukų (ženkliukai gali būti tiesiog +) keičiamas naudotojo lygis (pradedantysis, pažengęs, ekspertas)
+Dalyvavimas sesijose
+Dalyvavimas prasideda prisijungus prie savo paskyros tinkamu laiku
+Dalyvavimas užskaitomas jeigu naudotojas prisijungė prie savo paskyros prieš sesija ir atsijungė jai pasibaigus, turėtų būti, kažkoks sesijos langas kur rodo, kad sesija vyksta, jeigu prisijungė žmogus į sesija
+(Bonus balas pažengusiems) po užsiėmimo duodamas testas (sesijos kūrėjas turi galimybę testą sukurti)
+Projekto vykdymas su GitHub
+GitHub struktūra:
+Branches ir pull requests: Kiekvienas narys dirba savo šakoje ir pateikia pull request, kuriuos peržiūri kiti nariai.
+Commit’ai: Kiekvienas komandos narys pateikia bent 3 commit’us su aiškiais funkcijų aprašymais.
+Komandos narių rolės:
+Duomenų bazės kūrėjas:
+Sukuria SQLAlchemy modelius įgūdžiams, užsiėmimams ir vartotojams.
+Realizuoja CRUD (pridėti, skaityti, atnaujinti, ištrinti) funkcijas duomenims valdyti.
+Vertinimų ir užsiėmimų kūrėjas:
+Įgyvendina užsiėmimų organizavimo ir dalyvavimo funkcijas.
+Programuoja įgūdžių vertinimo ir peržiūros sistemą.
+Vartotojų profilių kūrėjas:
+Sukuria vartotojų profilius ir progresavimo sistemą, įskaitant įgūdžių lygio augimą.
+Kuria pasiekimų sistemą, leidžiančią vartotojams gauti ženkliukus.
+Būtinos sąlygos
+Modulinė struktūra: Programa turi būti suskirstyta į modulius: įgūdžių, užsiėmimų ir profilių valdymas.
+Duomenų išsaugojimas: Naudojant SQLAlchemy, duomenys turi būti išsaugomi SQLite duomenų bazėje.
+GitHub naudojimas: Būtina naudoti šakas,      ir commit’us su aiškiais pavadinimais.
+Stabilumas ir klaidų valdymas: Programa turi tinkamai apdoroti klaidas ir išlikti stabili.
+ 
