@@ -126,20 +126,69 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
         return f'ERR: {str(e)}'    
 
 
+
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
-    # bandymas prisiregistruoti prie užsiėmimo
-    # return 'ERR: ...', jeigu klaida
-    # įrašom į lesson_enrolment lentelę, created_on = datetime.datetime.now(UTC)
-    # pagal laiką primi x bus laikomi sėkmingai užsiregistravę, likę - laukiančiųjų sąraše
-    # galima padaryti tikrinimą ar nesikerta su kitomis registracijomis
-    ...
+    try:
+        # Patikriname, ar paskaita egzistuoja
+        lesson = session.execute(select(Lesson).where(Lesson.id == lesson_id)).scalar_one_or_none()
+        if not lesson:
+            return "Klaida: Tokios paskaitos nėra."
+
+        # Patikriname, ar paskaita jau prasidėjo
+        if lesson.start < datetime.datetime.now():
+            return "Klaida: Negalima registruotis į paskaitą, kuri jau prasidėjo."
+
+        # Patikriname, ar vartotojas jau yra užsiregistravęs į šią paskaitą
+        existing_enrolment = session.execute(select(LessonEnrolment).where(
+            LessonEnrolment.user_id == user_id,
+            LessonEnrolment.lesson_id == lesson_id
+        )).scalar_one_or_none()
+        if existing_enrolment:
+            return "Klaida: Jūs jau esate užsiregistravęs į šią paskaitą."
+
+        # Patikriname, ar vartotojas neturi kitų registracijų tuo pačiu laiku
+        overlapping_enrolments = session.execute(select(LessonEnrolment).join(Lesson).where(
+            LessonEnrolment.user_id == user_id,
+            Lesson.start <= lesson.end,
+            Lesson.end >= lesson.start
+        )).scalars().all()
+        
+        if overlapping_enrolments:
+            return "Klaida: Jūs turite kitų registracijų, kurios susikerta su šia paskaita."
+
+        # Įrašome registraciją į LessonEnrolment lentelę
+        new_enrolment = LessonEnrolment(
+            lesson_id=lesson_id,
+            user_id=user_id,
+            created_on=datetime.datetime.now(datetime.timezone.utc)  # Naudojame UTC laiką
+        )
+        session.add(new_enrolment)
+        session.commit()
+        return "Sėkmingai užsiregistravote į paskaitą."
+    
+    except Exception as e:
+        session.rollback()
+        return f"Klaida: {str(e)}"
+    
+    
 
 
 def cancel_enrolment_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
-    # bandymas atsisakyti registracijos į užsiėmimą
-    # return 'ERR: ...', jeigu klaida
-    # ištrinam įrašą iš lesson_enrolment lentelės
-    ...
+    try:
+        enrolment = session.execute(select(LessonEnrolment).where(
+            LessonEnrolment.user_id == user_id,
+            LessonEnrolment.lesson_id == lesson_id
+        )).scalar_one_or_none()
+        if not enrolment:
+            return "Jūs nesate užsiregistravęs į šią paskaitą."
+
+        session.delete(enrolment)
+        session.commit()
+        return "Sėkmingai atšaukėte registraciją."
+    except Exception as e:
+        session.rollback()
+        return f"Klaida: {str(e)}"
+    
 
 
 def login_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
