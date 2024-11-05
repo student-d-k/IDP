@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, insert
+from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, insert, delete
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 import datetime
 
@@ -88,11 +88,22 @@ def create_lesson(session: Session, user_id: str, name: str, skill_id: str, star
 
 
 def delete_lesson(session: Session, lesson_id: int) -> str:
-    # užsiėmimo ištrynimas
-    # return 'ERR: ...', jeigu klaida
-    # įštrinam iš lesson lentelės ir visas registracijas,
-    # jeigu užsiėmimas jau įvyko ar vyksta, tai ištrinti neleidžiama
-    ...
+    # Užsiėmimo ištrynimas
+    lesson = session.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        return 'ERR: Užsiėmimas nerastas.'
+    now = datetime.datetime.now()
+    if lesson.start <= now <= lesson.end:
+        return 'ERR: Užsiėmimas vis dar vyksta arba jau įvyko.'
+    try:
+        session.execute(delete(LessonEnrolment).where(LessonEnrolment.lesson_id == lesson_id))
+        session.execute(delete(Lesson).where(Lesson.id == lesson_id))
+        session.commit()
+        return 'Užsiėmimas ištrintas.'
+    except Exception as e:
+        session.rollback()
+        return f'ERR: {str(e)}'
+
 
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     # bandymas prisiregistruoti prie užsiėmimo
