@@ -71,37 +71,23 @@ def ui_rate_user_skill(user_id: String):
     ...
 
 
-# current_user_id = ui_login()
+current_user_id = ui_login()
 
-# ui = '1'
-# while True:
-#     match ui:
-#         case '1':
-#             ui_profile(current_user_id)
-#         case '2':
-#             ui_enrolments(current_user_id)
-#         case '3':
-#             ui_rate_user_skill(current_user_id)
-#         case 'q':
-#             print('Viso')
-#             break
-#         case _:
-#             print('Neteisigai įvedėte')
-#     ui = input('Pasirinkite veiksmą (1 - profilis, 2 - registracijos, 3 - vertinimai, q - išeiti): ')
+ui = '1'
+while True:
+    match ui:
+        case '1':
+            ui_profile(current_user_id)
+        case '2':
+            ui_enrolments(current_user_id)
+        case '3':
+            ui_rate_user_skill(current_user_id)
+        case 'q':
+            print('Viso')
+            break
+        case _:
+            print('Neteisigai įvedėte')
+    ui = input('Pasirinkite veiksmą (1 - profilis, 2 - registracijos, 3 - vertinimai, q - išeiti): ')
 
-# print(create_lesson(session, 'jons', 'pirma pamoka', 'python', datetime.datetime(2024, 11, 5, 11, 0), datetime.datetime(2024, 11, 5, 12, 0)))
-# ui_profile('jons')
-
-user_id = "Suslavicius"
-lesson_name = "Vin"
-skill_id = "skill654"
-start_time = datetime.datetime.now() + timedelta(days=2)
-end_time = start_time + timedelta(hours=2)
-
-result = create_lesson(session, user_id, lesson_name, skill_id, start_time, end_time)
-
-
-if result == 'ok':
-    print("Lesson created successfully!")
-else:
-    print(f"Failed to create lesson: {result}")
+print(create_lesson(session, 'jons', 'pirma pamoka', 'python', datetime.datetime(2024, 11, 5, 11, 0), datetime.datetime(2024, 11, 5, 12, 0)))
+ui_profile('jons')
