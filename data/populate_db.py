@@ -12,6 +12,7 @@ try:
     cursor.execute('DELETE FROM user')
     cursor.execute('DELETE FROM skill')
     cursor.execute('DELETE FROM skill_rating')
+    cursor.execute('DELETE FROM lesson')
     
     # šitos lenteles pildomos rankiniu būdu per sql ar db viewer
 
@@ -49,6 +50,18 @@ try:
     INSERT INTO user_skill_medal VALUES 
         ('ais', 'Python', 2),
         ('dk', 'MS Office', 10)
+    ''')
+
+    cursor.execute('''
+    INSERT INTO lesson VALUES 
+        (1, 'Python pagrindai', 'ais', 'Python', '2024-11-07 11:00', '2024-11-07 11:30'),
+        (2, 'Kalbėsime apie excel', 'dk', 'MS Office', '2024-11-07 13:00', '2024-11-07 14:00')
+    ''')
+
+    cursor.execute('''
+    INSERT INTO lesson_enrolment VALUES 
+        (1, 'ais', '2049-12-30 00:00'),
+        (2, 'dk', '2049-12-30 00:00')
     ''')
 
     conn.commit()

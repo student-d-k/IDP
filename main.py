@@ -48,6 +48,9 @@ def ui_profile(user_id: String):
             rating_name = get_user_skill_rating(session, user_id, skill.id)
             medal_count = get_user_skill_medal_count(session, user_id, skill.id)
             print(f'skill {skill.id} - {rating_name}, {medal_count} medalių')
+        lessons = get_enrolments(session, teacher_id=user_id)
+        for lesson in lessons:
+            print(f'Mano paskaitos {lesson.name} - {lesson.skill_id}, pradžia {lesson.start.strftime('%Y %b %d %H:%M')}')
         ui = input('Pasirinkite veiksmą (1 - kito vartotojo profilis, 2 - sukurti užsiėmimą, b - gryžti): ')
         match ui:
             case '1':
@@ -72,7 +75,7 @@ def ui_enrolments(user_id: str):
         print("Nesate užsiregistravę į jokias paskaitas.")
 
     while True:
-        action = input("Pasirinkite veiksmą (1 - registracija į paskaitą, 2 - registracijos atšaukimas, b - grįžti")
+        action = input("Pasirinkite veiksmą (1 - registracija į paskaitą, 2 - registracijos atšaukimas, b - grįžti: ")
         
         if action == '1':
             lesson_id = input("Įveskite paskaitos ID, į kurią norite registruotis: ")

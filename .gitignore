@@ -1,6 +1,5 @@
 .venv
-migrations/__pycache__
-migrations/versions/__pycache__
+migrations
 model/__pycache__
 */__pycache__
 .vscode
