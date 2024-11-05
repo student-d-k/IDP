@@ -1,3 +1,4 @@
+# poetry init 
 from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from model.idp_crud import *
@@ -92,6 +93,9 @@ def ui_enrolments(user_id: str):
 
 
 
+    
+
+
 
 
 def ui_rate_user_skill(user_id: String):
@@ -117,6 +121,3 @@ while True:
         case _:
             print('Neteisigai įvedėte')
     ui = input('Pasirinkite veiksmą (1 - profilis, 2 - registracijos, 3 - vertinimai, q - išeiti): ')
-
-# print(create_lesson(session, 'jons', 'pirma pamoka', 'python', datetime.datetime(2024, 11, 5, 11, 0), datetime.datetime(2024, 11, 5, 12, 0)))
-# ui_profile('jons')
