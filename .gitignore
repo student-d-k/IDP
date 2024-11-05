@@ -1,2 +1,5 @@
 .venv
-model/__pycache__/idp_crud.cpython-312.pyc
+migrations/__pycache__
+migrations/versions/__pycache__
+model/__pycache__
+data/idp.db
