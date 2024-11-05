@@ -7,10 +7,21 @@ cursor = conn.cursor()
 
 try:
 
+    cursor.execute('DELETE FROM user_skill_medal')
+    cursor.execute('DELETE FROM user_skill_rating')
+    cursor.execute('DELETE FROM user')
+    cursor.execute('DELETE FROM skill')
+    cursor.execute('DELETE FROM skill_rating')
+    
+    # šitos lenteles pildomos rankiniu būdu per sql ar db viewer
+
     cursor.execute('''
     INSERT INTO user VALUES 
-        ('jons', '', 'Jonas', 'Jonaitis'),
-        ('petrs', '', 'Petras', 'Petraitis')
+        ('ais', '', 'Aistė', 'S.'),
+        ('dk', '', 'Daumantas', 'K.'),
+        ('ks', '', 'Karolis', 'S.'),
+        ('pm', '', 'Paulius', 'M.'),
+        ('rob', '', 'Robertas', 'L.')
     ''')
 
     cursor.execute('''
@@ -26,14 +37,18 @@ try:
         (3, 'Ekspertas')
     ''')
 
+    # nuo čia optional, šitos lentelės pildomos per UI
+
     cursor.execute('''
     INSERT INTO user_skill_rating VALUES 
-        ('jons', 'Python', 2, 'petrs')
+        ('ais', 'Python', 1, 'dk'),
+        ('dk', 'Python', 1, 'dk')
     ''')
 
     cursor.execute('''
     INSERT INTO user_skill_medal VALUES 
-        ('petrs', 'MS Office', 1)
+        ('ais', 'Python', 2),
+        ('dk', 'MS Office', 10)
     ''')
 
     conn.commit()
