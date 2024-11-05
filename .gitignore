@@ -1,0 +1,7 @@
+.venv
+migrations/__pycache__
+migrations/versions/__pycache__
+model/__pycache__
+*/__pycache__
+data/idp.db
+.vscode
