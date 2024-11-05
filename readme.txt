@@ -25,6 +25,11 @@ target_metadata = Base.metadata
 alembic.ini:
 sqlalchemy.url = sqlite:///data/idp.db
 
+# alembic revision --autogenerate -m "pradine DB struktura"
+# alembic upgrade head
+
+# alembic revision --autogenerate -m "populate user skill skill_rating user_skill_rating lesson"
+
 # github
 
 https://github.com/student-d-k/IDP
