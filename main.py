@@ -90,9 +90,6 @@ def ui_enrolments(user_id: str):
         else:
             print("Neteisinga įvestis. Prašome bandyti dar kartą.")
             
-
-
-
     
 
 
