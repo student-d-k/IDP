@@ -80,6 +80,7 @@ def create_lesson(session: Session, user_id: str, name: str, skill_id: str, star
     # galima padaryti tikrinimą ar nesikerta su kitais vartotojo užsiėmimais arba registracijomis į užsiėmimus
     all_lessons = session.query(Lesson).all()
 
+
     try:
         stmt = insert(Lesson).values(name=name, teacher=user_id, skill_id=skill_id, start=start, end=end)
         for lesson in all_lessons:
