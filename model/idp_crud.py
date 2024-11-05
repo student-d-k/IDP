@@ -18,7 +18,7 @@ def get_users(session: Session) -> List[User]:
 def get_user_skills(session: Session, user_id: str) -> List[Skill]:
     # Skill sąrašas, kurių yra įvertinimas arba turi zenkliuku
     stmt = ( 
-        select(Skill)
+        select(Skill).distinct()
         .outerjoin(UserSkillRating, Skill.id == UserSkillRating.skill_id)
         .outerjoin(UserSkillMedal, Skill.id == UserSkillMedal.skill_id)
         .where((UserSkillRating.user_id == user_id) | (UserSkillMedal.user_id == user_id)))
@@ -29,11 +29,10 @@ def get_user_skill_rating(session: Session, user_id: str, skill_id: str) -> str:
     # grąžina vartotojo įgūdžio įvertinimo pavadinimą (None, jeigu nėra)
     stmt = ( 
         select(UserSkillRating)
-        .where(UserSkillRating.user_id == user_id and UserSkillRating.skill_id == skill_id))
+        .where((UserSkillRating.user_id == user_id) & (UserSkillRating.skill_id == skill_id)))
     ratings = session.execute(stmt).scalars().all()
     if not ratings:
         return None
-
     avg_rating_value = round(sum(r.skill_rating_value for r in ratings) / len(ratings))
     stmt = select(SkillRating).where(SkillRating.value == avg_rating_value)
     return session.execute(stmt).scalars().one_or_none().name
@@ -97,8 +96,6 @@ def create_lesson(session: Session, user_id: str, name: str, skill_id: str, star
     # įrašom į lesson lentelę
     # galima padaryti tikrinimą ar nesikerta su kitais vartotojo užsiėmimais arba registracijomis į užsiėmimus
     all_lessons = session.query(Lesson).all()
-
-
     try:
         stmt = insert(Lesson).values(name=name, teacher=user_id, skill_id=skill_id, start=start, end=end)
         for lesson in all_lessons:
