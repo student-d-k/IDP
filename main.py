@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from model.idp_crud import *
+import datetime
 
 # engine = create_engine('sqlite:///data/idp.db', echo=True)
 Session = sessionmaker(bind=engine)
@@ -12,14 +13,14 @@ def ui_login() -> String:
     # grazina prisiloginusio userio id arba baigia programos darba
     users = get_users(session)
     while True:
-        login = input('login: ')
+        login = input('Prisijungimas: ')
         if login == '':
             exit()
-        password = input('password: ')
+        password = input('Slaptažodis: ')
         for user in users:
             if login == user.id and password == user.password:
                 return user.id
-        print('Invalid login or password')
+        print('Neteisingas prisijungimo vardas arba slaptažodis.')
 
 
 def ui_profile_choose_profile() -> String:
@@ -59,10 +60,42 @@ def ui_profile(user_id: String):
                 print('Neteisigai įvedėte')
 
 
-def ui_enrolments(user_id: String):
-    # isspausdina vartotojo registracijas
-    # leidzia sukurti, trinti registracijas
-    ...
+def ui_enrolments(user_id: str):
+    stmt = select(Lesson).join(LessonEnrolment).where(LessonEnrolment.user_id == user_id)
+    enrolments = session.execute(stmt).scalars().all()
+
+    if enrolments:
+        print("Jūsų esamos registracijos:")
+        for lesson in enrolments:
+            print(f"Paskaitos ID: {lesson.id}, Pavadinimas: {lesson.name}, Pradžia: {lesson.start}, Pabaiga: {lesson.end}")
+    else:
+        print("Nesate užsiregistravę į jokias paskaitas.")
+
+    while True:
+        action = input("Pasirinkite veiksmą (1 - registracija į paskaitą, 2 - registracijos atšaukimas, b - grįžti")
+        
+        if action == '1':
+            lesson_id = input("Įveskite paskaitos ID, į kurią norite registruotis: ")
+            result = enrol_to_lesson(session, user_id, lesson_id)
+            print(result)
+        
+        elif action == '2':
+            lesson_id = input("Įveskite paskaitos ID, kurios registraciją norite atšaukti: ")
+            result = cancel_enrolment_to_lesson(session, user_id, lesson_id)
+            print(result)
+        
+        elif action == 'b':
+            return
+        
+        else:
+            print("Neteisinga įvestis. Prašome bandyti dar kartą.")
+            
+
+
+
+    
+
+
 
 
 def ui_rate_user_skill(user_id: String):

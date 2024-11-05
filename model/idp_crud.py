@@ -133,6 +133,7 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
         return f'ERR: {str(e)}'    
 
 
+
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     # bandymas prisiregistruoti prie užsiėmimo
     # return 'ERR: ...', jeigu klaida
