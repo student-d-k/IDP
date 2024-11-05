@@ -40,24 +40,39 @@ def ui_profile_add_lesson(user_id: String):
 
 
 def ui_profile(user_id: String):
-    # parodo vartotojo įgūdžius, aktyvias registracijas, sukurtus užsiėmimus su prisiregistravusių kiekiu
-    while True:
-        print(user_id)
-        skills = get_user_skills(session, user_id)
-        for skill in skills:
-            rating_name = get_user_skill_rating(session, user_id, skill.id)
-            medal_count = get_user_skill_medal_count(session, user_id, skill.id)
-            print(f'skill {skill.id} - {rating_name}, {medal_count} medalių')
-        ui = input('Pasirinkite veiksmą (1 - kito vartotojo profilis, 2 - sukurti užsiėmimą, b - gryžti): ')
-        match ui:
-            case '1':
-                user_id = ui_profile_choose_profile()
-            case '2':
-                ui_profile_add_lesson(user_id)
-            case 'b':
-                return
-            case _:
-                print('Neteisigai įvedėte')
+    # Parodo konkretaus vartotojo profilį su įgūdžiais, aktyviomis registracijomis ir sukurtų užsiėmimų duomenimis
+    print(f"\nVartotojo ID: {user_id}")
+    
+    # 1. Rodyti tik konkretaus vartotojo įgūdžius
+    print("Įgūdžiai:")
+    skills = session.query(Skill).join(UserSkillMedal, Skill.id == UserSkillMedal.skill_id)\
+                                 .filter(UserSkillMedal.user_id == user_id).all()
+    
+    seen_skills = set()
+    for skill in skills:
+        skill_id = getattr(skill, "id", None)
+        if skill_id and skill_id not in seen_skills:
+            seen_skills.add(skill_id)
+            skill_name = skill.id
+            rating_name = get_user_skill_rating(session, user_id, skill_id)
+            medal_count = get_user_skill_medal_count(session, user_id, skill_id)
+            print(f'Įgūdis: {skill_name} - {rating_name}, Medalių skaičius: {medal_count}')
+    
+    # 2. Rodyti aktyvias registracijas
+    print("\nAktyvios Registracijos:")
+    enrolments = get_enrolments(session, user_id)
+    if enrolments:
+        for enrolment in enrolments:
+            print(f"Užsiėmimas: {enrolment.lesson_id} - Data: {enrolment.date}, Statusas: {enrolment.status}")
+    else:
+        print("Nėra aktyvių registracijų")
+    
+    # 3. Rodyti sukurtus užsiėmimus su prisiregistravusiųjų kiekiu
+    print("\nSukurti Užsiėmimai:")
+    lessons = session.query(Lesson).filter_by(teacher=user_id).all()
+    for lesson in lessons:
+        enrolment_count = session.query(LessonEnrolment).filter_by(lesson_id=lesson.id).count()
+        print(f"Užsiėmimas: {lesson.name} - Pradžia: {lesson.start}, Pabaiga: {lesson.end}, Prisiregistravusių: {enrolment_count}")   
 
 
 def ui_enrolments(user_id: str):
