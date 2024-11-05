@@ -85,7 +85,7 @@ def create_lesson(session: Session, user_id: str, name: str, skill_id: str, star
         stmt = insert(Lesson).values(name=name, teacher=user_id, skill_id=skill_id, start=start, end=end)
         for lesson in all_lessons:
             if (start >= lesson.start and start <= lesson.end) or (end >= lesson.start and end <= lesson.end):
-                return("ERR: time for the lesson is taken")
+                return("ERR: Time for the lesson is taken")
         session.execute(stmt)
         session.commit()
         return 'ok'

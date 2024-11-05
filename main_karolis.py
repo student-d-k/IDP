@@ -6,9 +6,9 @@ from model.idp_crud import *
 Session = sessionmaker(bind=engine)
 session = Session()
 
-user_id = "Suslavicius"
-lesson_name = "Vin"
-skill_id = "skill654"
+user_id = "Paulius"
+lesson_name = "GitHub Branches"
+skill_id = "453"
 start_time = datetime.datetime.now() + timedelta(days=2)
 end_time = start_time + timedelta(hours=2)
 
