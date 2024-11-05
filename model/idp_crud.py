@@ -69,7 +69,28 @@ def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_
     # user_to_rate_id - vartotojas, kurio įgudį vertina
     # return 'ERR: ...', jeigu klaida
     # jeigu vertinimas, jau buvo, pakeičia rating_value
-    ...
+    user_to_rate = session.query(User).filter(User.id == user_to_rate_id).first()
+    if not user_to_rate:
+        return 'ERR: Vartotojas, kurio įgūdis vertinamas yra nerastas.'
+    user = session.query(User).filter(User.id == user_id).first()
+    if not user:
+        return 'ERR: Vartotojas kuris vertina nerastas.'
+    existing_rating = session.query(UserSkillRating).filter(UserSkillRating.user_id == user_to_rate_id, UserSkillRating.skill_id == skill_id, UserSkillRating.user_who_rated_id == user_id).first()
+    try:
+        if existing_rating:
+            existing_rating.skill_rating_value = rating_value
+            session.commit()
+            return 'Vertinimas atnaujintas.'
+        else:
+            new_rating = UserSkillRating(user_id=user_to_rate_id, skill_id=skill_id, skill_rating_value=rating_value, user_who_rated_id=user_id)
+            session.add(new_rating)
+            session.commit()
+            return 'Vertinimas pridėtas.'
+    except Exception as e:
+        session.rollback()
+        return f'ERR: {str(e)}'
+
+    
 
 
 def create_lesson(session: Session, user_id: str, name: str, skill_id: str, start: datetime.datetime, end: datetime.datetime) -> str:
