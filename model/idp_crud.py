@@ -1,7 +1,8 @@
 from typing import List
-from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete
+from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete, or_
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
-import datetime
+# import datetime
+from datetime import datetime, timedelta
 
 if __name__ == "__main__":
     from idp_classes import *
@@ -115,8 +116,14 @@ def create_lesson(session: Session, user_id: str, name: str, skill_id: str, star
     # return 'ERR: ...', jeigu klaida
     # įrašom į lesson lentelę
     # galima padaryti tikrinimą ar nesikerta su kitais vartotojo užsiėmimais arba registracijomis į užsiėmimus
+    all_lessons = session.query(Lesson).all()
+
+
     try:
         stmt = insert(Lesson).values(name=name, teacher=user_id, skill_id=skill_id, start=start, end=end)
+        for lesson in all_lessons:
+            if (start >= lesson.start and start <= lesson.end) or (end >= lesson.start and end <= lesson.end):
+                return("ERR: Time for the lesson is taken")
         session.execute(stmt)
         session.commit()
         return 'ok'
@@ -164,6 +171,7 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
     except Exception as e:
         session.rollback()
         return f'ERR: {str(e)}'
+
 
 
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
