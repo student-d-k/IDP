@@ -87,6 +87,3 @@ while True:
         case _:
             print('Neteisigai įvedėte')
     ui = input('Pasirinkite veiksmą (1 - profilis, 2 - registracijos, 3 - vertinimai, q - išeiti): ')
-
-# print(create_lesson(session, 'jons', 'pirma pamoka', 'python', datetime.datetime(2024, 11, 5, 11, 0), datetime.datetime(2024, 11, 5, 12, 0)))
-# ui_profile('jons')
