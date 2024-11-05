@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from model.idp_crud import *
+import datetime
 
 # engine = create_engine('sqlite:///data/idp.db', echo=True)
 Session = sessionmaker(bind=engine)
@@ -88,26 +89,47 @@ def ui_enrolments(user_id: str):
         else:
             print("Neteisinga įvestis. Prašome bandyti dar kartą.")
             
-            
+
+
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     try:
+        # Patikriname, ar paskaita egzistuoja
         lesson = session.execute(select(Lesson).where(Lesson.id == lesson_id)).scalar_one_or_none()
         if not lesson:
-            return "Tokios paskaitos nėra."
-        if lesson.start < datetime.datetime.now():
-            return "Negalima registruotis į paskaitą, kuri jau prasidėjo"
+            return "Klaida: Tokios paskaitos nėra."
 
+        # Patikriname, ar paskaita jau prasidėjo
+        if lesson.start < datetime.datetime.now():
+            return "Klaida: Negalima registruotis į paskaitą, kuri jau prasidėjo."
+
+        # Patikriname, ar vartotojas jau yra užsiregistravęs į šią paskaitą
         existing_enrolment = session.execute(select(LessonEnrolment).where(
             LessonEnrolment.user_id == user_id,
             LessonEnrolment.lesson_id == lesson_id
         )).scalar_one_or_none()
         if existing_enrolment:
-            return "Jūs jau esate užsiregistravęs į šią paskaitą."
+            return "Klaida: Jūs jau esate užsiregistravęs į šią paskaitą."
 
-        new_enrolment = LessonEnrolment(lesson_id=lesson_id, user_id=user_id, created_on=datetime.datetime.now())
+        # Patikriname, ar vartotojas neturi kitų registracijų tuo pačiu laiku
+        overlapping_enrolments = session.execute(select(LessonEnrolment).join(Lesson).where(
+            LessonEnrolment.user_id == user_id,
+            Lesson.start <= lesson.end,
+            Lesson.end >= lesson.start
+        )).scalars().all()
+        
+        if overlapping_enrolments:
+            return "Klaida: Jūs turite kitų registracijų, kurios susikerta su šia paskaita."
+
+        # Įrašome registraciją į LessonEnrolment lentelę
+        new_enrolment = LessonEnrolment(
+            lesson_id=lesson_id,
+            user_id=user_id,
+            created_on=datetime.datetime.now(datetime.timezone.utc)  # Naudojame UTC laiką
+        )
         session.add(new_enrolment)
         session.commit()
         return "Sėkmingai užsiregistravote į paskaitą."
+    
     except Exception as e:
         session.rollback()
         return f"Klaida: {str(e)}"
