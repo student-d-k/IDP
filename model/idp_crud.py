@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, insert, or_, and_
+from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete, or_
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 # import datetime
 from datetime import datetime, timedelta
@@ -53,16 +53,33 @@ def get_user_skill_medal_count(session: Session, user_id: str, skill_id: str) ->
 
 def get_enrolments(
     session: Session, 
-    user_id: str, 
-    teacher_id: str, 
-    skill_id: str, 
-    start_from: datetime.datetime, start_to: datetime.datetime) -> List[Lesson]:
+    user_id: str = None, 
+    teacher_id: str = None, 
+    skill_id: str = None, 
+    start_from: datetime.datetime = None, 
+    start_to: datetime.datetime = None
+) -> List[Lesson]:
     # Lesson sąrašas pagal filtrą (None reiškia imam viską):
     # user_id - kur vartotojas jau užsiregistravęs
     # teacher_id - užsiėmimai, kurios veda tam tikras mokytojas
     # skill_id - kokį įgudį kelia
     # start_from .. start_to - laiko intervalas, kada prasideda užsiėmimas
-    ...
+    stmt = select(Lesson).join(LessonEnrolment, Lesson.id == LessonEnrolment.lesson_id)
+    # filtrai
+    filters = []
+    if user_id is not None:
+        filters.append(LessonEnrolment.user_id == user_id)
+    if teacher_id is not None:
+        filters.append(Lesson.teacher == teacher_id)
+    if skill_id is not None:
+        filters.append(Lesson.skill_id == skill_id)
+    if start_from is not None:
+        filters.append(Lesson.start >= start_from)
+    if start_to is not None:
+        filters.append(Lesson.start <= start_to)
+    if filters:
+        stmt = stmt.where(and_(*filters))
+    return session.execute(stmt).scalars().all()
 
 
 def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_id: str, rating_value: int) -> str:
@@ -70,6 +87,7 @@ def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_
     # user_to_rate_id - vartotojas, kurio įgudį vertina
     # return 'ERR: ...', jeigu klaida
     # jeigu vertinimas, jau buvo, pakeičia rating_value
+    # negali vertinti pats saves ar gali?
     ...
 
 
@@ -99,7 +117,21 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
     # return 'ERR: ...', jeigu klaida
     # įštrinam iš lesson lentelės ir visas registracijas,
     # jeigu užsiėmimas jau įvyko ar vyksta, tai ištrinti neleidžiama
-    ...
+    lesson = session.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        return 'ERR: Užsiėmimas nerastas.'
+    now = datetime.datetime.now()
+    if lesson.start <= now <= lesson.end:
+        return 'ERR: Užsiėmimas vis dar vyksta arba jau įvyko.'
+    try:
+        session.execute(delete(LessonEnrolment).where(LessonEnrolment.lesson_id == lesson_id))
+        session.execute(delete(Lesson).where(Lesson.id == lesson_id))
+        session.commit()
+        return 'Užsiėmimas ištrintas.'
+    except Exception as e:
+        session.rollback()
+        return f'ERR: {str(e)}'    
+
 
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     # bandymas prisiregistruoti prie užsiėmimo
