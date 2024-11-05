@@ -88,7 +88,6 @@ def create_lesson(session: Session, user_id: str, name: str, skill_id: str, star
 
 
 def delete_lesson(session: Session, lesson_id: int) -> str:
-    # Užsiėmimo ištrynimas
     lesson = session.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not lesson:
         return 'ERR: Užsiėmimas nerastas.'
