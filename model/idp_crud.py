@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete, or_, func
+from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete, or_, func, distinct
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 # import datetime
 from datetime import datetime, timedelta
@@ -64,7 +64,7 @@ def get_enrolments(
     # teacher_id - užsiėmimai, kurios veda tam tikras mokytojas
     # skill_id - kokį įgudį kelia
     # start_from .. start_to - laiko intervalas, kada prasideda užsiėmimas
-    stmt = select(Lesson).join(LessonEnrolment, Lesson.id == LessonEnrolment.lesson_id)
+    stmt = select(Lesson).distinct().join(LessonEnrolment, Lesson.id == LessonEnrolment.lesson_id)
     # filtrai
     filters = []
     if user_id is not None:
