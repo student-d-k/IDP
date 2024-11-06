@@ -159,12 +159,21 @@ def ui_enrolments(user_id: str):
     print(f'{user_id} registracijos')
     print('-'*60)
 
-    if enrolments:
+    if len(enrolments) > 0:
         print("Jūsų esamos registracijos:")
         for lesson in enrolments:
             print(f"Paskaitos ID: {lesson.id}, Pavadinimas: {lesson.name}, Pradžia: {lesson.start}, Pabaiga: {lesson.end}")
     else:
         print("Nesate užsiregistravę į jokias paskaitas.")
+    print('-'*60)
+
+    lessons = session.execute(select(Lesson).where(Lesson.start > datetime.datetime.now() - datetime.timedelta(minutes=10))).scalars().all()
+    if len(lessons) > 0:
+        print('Galimi užsiėmimai:')
+        for lesson in lessons:
+            print(f'Užsiėmimo id: {lesson.id}, pavadinimas: {lesson.name}, pradžia: {lesson.start}, pabaiga: {lesson.end}')
+    else:
+        print('Nėra užsiėmimų į kuriuos galite registruotis')
 
     while True:
         action = input("Pasirinkite veiksmą (1 - registracija į paskaitą, 2 - registracijos atšaukimas, b - grįžti: ")

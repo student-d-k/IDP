@@ -273,14 +273,14 @@ def login_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     try:
         # err check 1
         lesson = session.execute(select(Lesson).where(Lesson.id == lesson_id)).scalars().all()
-        if not lesson:
+        if len(lesson) == 0:
             return f'Klaida: tokios paskaitos ({lesson_id}) nėra'
         # err check 2
         lesson_login = session.execute(
             select(LessonLog)
             .where((LessonLog.lesson_id == lesson_id) & (LessonLog.user_id == user_id))
         ).scalars().all()
-        if lesson_login:
+        if len(lesson_login) > 0:
             return f'Klaida: jau esate prisijungę prie paskaitos {lesson_id}'
         # err check 3
         enrolments = get_enrolments(session, user_id=user_id)
