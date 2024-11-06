@@ -172,7 +172,7 @@ def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
         if not lesson:
             return "Klaida: Tokios paskaitos nėra."
 
-        if lesson.start < datetime.datetime.now():
+        if lesson.start < datetime.datetime.now() - datetime.timedelta(minutes=5):
             return "Klaida: Negalima registruotis į paskaitą, kuri jau prasidėjo."
 
         existing_enrolment = session.execute(select(LessonEnrolment).where(
