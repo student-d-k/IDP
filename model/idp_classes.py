@@ -38,7 +38,8 @@ class UserSkillRating(Base):
     user_id = Column(String, ForeignKey('user.id'), primary_key=True, nullable=False)
     skill_id = Column(String, ForeignKey('skill.id'), primary_key=True, nullable=False)
     skill_rating_value = Column(Integer, ForeignKey('skill_rating.value'), nullable=False)
-    user_who_rated_id = Column(String, ForeignKey('user.id'), nullable=False)
+    user_who_rated_id = Column(String, ForeignKey('user.id'), primary_key=True, nullable=False)
+    comment = Column(String, nullable=True)
 
 
 # vartotojo įgūdžių zenkliukai

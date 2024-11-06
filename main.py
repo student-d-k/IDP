@@ -130,7 +130,7 @@ def ui_profile(user_id: String):
         for skill in skills:
             rating_name = get_user_skill_rating(session, user_id, skill.id)
             medal_count = get_user_skill_medal_count(session, user_id, skill.id)
-            print(f'skill {skill.id} - {rating_name}, {medal_count} medalių')
+            print(f'Įgūdis {skill.id} - {rating_name}, {medal_count} medalių. Komentarai: {get_user_skill_rating_comments(session, user_id, skill.id)}')
         lessons = get_enrolments(session, teacher_id=user_id)
         for lesson in lessons:
             print(f'Mano paskaitos {lesson.name} - {lesson.skill_id}, pradžia {lesson.start.strftime('%Y %b %d %H:%M')}')
@@ -207,15 +207,24 @@ def ui_rate_user_skill(user_id: String):
             else:
                 print(f'{u.id} {u.first_name} neturi jūsų vertinimų')
         print('-'*60)
-        action = input("Pasirinkite veiksmą: (vartotojo_id įgūdis vertinimas(1..3)), b - grįžti: ")
+        print('Pasirinkite veiksmą: vartotojo_id, įgūdis, vertinimas(1..3), komentaras(neprivalomas) arba b - grįžti')
+        action = input('Pvz. jon, Python, 1, nieko nesupranta tik daug kalba: ').strip()
         if action == 'b':
             return
         try:
-            action_id, action_skill, action_value = action.split()
-            if action_id in [user.id for user in users]:
-                print(rate_user_skill(session, user_id, action_id, action_skill, action_value))
+            s = action.split(',')
+            if len(s) == 3 or len(s) == 4:
+                action_id, action_skill, action_value = s[0].strip(), s[1].strip(), s[2].strip()
+                if len(s) == 4:
+                    action_comment = s[3].strip()
+                else:
+                    action_comment = None
+                if action_id in [user.id for user in users]:
+                    print(rate_user_skill(session, user_id, action_id, action_skill, action_value, action_comment))
+                else:
+                    print('Klaida: tokio vartotojo id nėra')
             else:
-                print('Klaida: tokio vartotojo id nėra')
+                print(f'Kažką neteisingai įvedėte')
         except Exception as e:
             print(f'Kažką neteisingai įvedėte')
             print(f'Klaida: {e}')

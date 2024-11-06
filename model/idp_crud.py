@@ -32,11 +32,24 @@ def get_user_skill_rating(session: Session, user_id: str, skill_id: str) -> str:
         select(UserSkillRating)
         .where((UserSkillRating.user_id == user_id) & (UserSkillRating.skill_id == skill_id)))
     ratings = session.execute(stmt).scalars().all()
-    if not ratings:
+    if len(ratings) == 0:
         return None
     avg_rating_value = round(sum(r.skill_rating_value for r in ratings) / len(ratings))
     stmt = select(SkillRating).where(SkillRating.value == avg_rating_value)
     return session.execute(stmt).scalars().one_or_none().name
+
+
+def get_user_skill_rating_comments(session: Session, user_id: str, skill_id: str) -> List[str]:
+    # grąžina vartotojo įgūdžio komentarus arba []
+    stmt = ( 
+        select(UserSkillRating)
+        .where((UserSkillRating.user_id == user_id) & (UserSkillRating.skill_id == skill_id)))
+    ratings = session.execute(stmt).scalars().all()
+    result = []
+    for r in ratings:
+        if r.comment is not None and r.comment.strip() != '':
+            result.append(r.comment.strip())
+    return result
 
 
 def get_user_skill_medal_count(session: Session, user_id: str, skill_id: str) -> int:
@@ -82,7 +95,7 @@ def get_enrolments(
     return session.execute(stmt).scalars().all()
 
 
-def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_id: str, rating_value: int) -> str:
+def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_id: str, rating_value: int, comment: str) -> str:
     # user_id - vartotojas, kuris vertina
     # user_to_rate_id - vartotojas, kurio įgudį vertina
     # return 'ERR: ...', jeigu klaida
@@ -97,10 +110,16 @@ def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_
     try:
         if existing_rating:
             existing_rating.skill_rating_value = rating_value
+            existing_rating.comment = comment
             session.commit()
             return 'Vertinimas atnaujintas.'
         else:
-            new_rating = UserSkillRating(user_id=user_to_rate_id, skill_id=skill_id, skill_rating_value=rating_value, user_who_rated_id=user_id)
+            new_rating = UserSkillRating(
+                user_id=user_to_rate_id, 
+                skill_id=skill_id, 
+                skill_rating_value=rating_value, 
+                user_who_rated_id=user_id,
+                comment=comment)
             session.add(new_rating)
             session.commit()
             return 'Vertinimas pridėtas.'
