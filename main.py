@@ -135,6 +135,11 @@ def ui_profile(user_id: String):
         for lesson in lessons:
             print(f'Mano paskaitos {lesson.name} - {lesson.skill_id}, pradžia {lesson.start.strftime('%Y %b %d %H:%M')}')
         print('-'*60)
+        stmt = select(Lesson).distinct().join(LessonLog, Lesson.id == LessonLog.lesson_id).where(LessonLog.user_id == user_id)
+        lessons_log = session.execute(stmt).scalars().all()
+        for l in lessons_log:
+            print(f'Dalyvavau užsiėmime "{l.name}", vedėjas - {l.teacher}, įgūdis - {l.skill_id}')
+        print('-'*60)
         ui = input('Pasirinkite veiksmą: 1 - kito vartotojo profilis, 2 - sukurti/ištrinti užsiėmimą, 3 - prisijungti, 4 - atsijungti, b - gryžti į pagrindinį meniu: ')
         match ui:
             case '1':
