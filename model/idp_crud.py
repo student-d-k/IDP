@@ -151,7 +151,7 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
     if not lesson:
         return 'ERR: Užsiėmimas nerastas.'
     now = datetime.datetime.now()
-    if lesson.start <= now:
+    if lesson.end <= now or lesson.start <= now + datetime.timedelta(minutes=5):
 # pakeičiau, kad būtų ir kai vyko
 # !!! @Aistė čia netiesa, čia sąlyga, kad užsiėmimas jau vyksta, bet nereiškia, kad užsiėmimas jau įvyko        
         return 'ERR: Užsiėmimas vis dar vyksta arba jau įvyko.'
@@ -172,7 +172,7 @@ def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
         if not lesson:
             return "Klaida: Tokios paskaitos nėra."
 
-        if lesson.start < datetime.datetime.now():
+        if lesson.start < datetime.datetime.now() - datetime.timedelta(minutes=5):
             return "Klaida: Negalima registruotis į paskaitą, kuri jau prasidėjo."
 
         existing_enrolment = session.execute(select(LessonEnrolment).where(
@@ -300,7 +300,7 @@ def logoff_from_lesson(session: Session, user_id: str, lesson_id: int) -> str:
             select(LessonLog)
             .where((LessonLog.lesson_id == lesson_id) & (LessonLog.user_id == user_id))
         ).scalars().all()
-        if len(lesson_login == 0):
+        if len(lesson_login) == 0:
             return f'Klaida: negalite atsijungti, nes nesate prisijungęs prie paskaitos {lesson_id}'
         if lesson_login[0].logged_off is None:
             lesson_login[0].logged_off = datetime.datetime.now(datetime.timezone.utc)
