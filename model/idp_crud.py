@@ -293,7 +293,7 @@ def logoff_from_lesson(session: Session, user_id: str, lesson_id: int) -> str:
             select(LessonLog)
             .where((LessonLog.lesson_id == lesson_id) & (LessonLog.user_id == user_id))
         ).scalars().all()
-        if not lesson_login:
+        if len(lesson_login == 0):
             return f'Klaida: negalite atsijungti, nes nesate prisijungęs prie paskaitos {lesson_id}'
         if lesson_login[0].logged_off is None:
             lesson_login[0].logged_off = datetime.datetime.now(datetime.timezone.utc)

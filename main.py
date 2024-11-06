@@ -100,17 +100,24 @@ def ui_profile_login_lesson(user_id: String):
             if action == 'b':
                 return
             # prisijungti
-            print(action)
+            print(login_to_lesson(session, user_id, lesson.id))
         except Exception as e:
             print(f'Kažką neteisingai įvedėte')
             print(f'Klaida: {e}')
 
 
 def ui_profile_logoff_lesson(user_id: String):
-    # leidžia atsijungti nuo užsiėmimo
-    # reiktu padaryti tiesiog klausima ar nori atsijungti nuo uzsiemimo, jeigu yra prisijunges 
-    # arba parasyti, kad nera nuo ko atsijungti
-    ...
+    # randam prisijungima prie paskaitos
+    lesson_login = session.execute(select(LessonLog).where(and_(LessonLog.logged_off == None, LessonLog.user_id == user_id))).scalars().all()
+    if len(lesson_login) == 0:
+        print('Klaida: neturite nuo ko atsijungti')
+        return
+    action = input(f'Atsijungti iš užsiėmimo {lesson_login[0].lesson_id}? [t/n]: ').strip().lower()
+    if action == 't':
+        print(logoff_from_lesson(session, user_id, lesson_login[0].lesson_id))
+    else:
+        print(f'Atsijungimas iš užsiėmimo {lesson_login[0].lesson_id} atšauktas')
+
 
 def ui_profile(user_id: String):
     # parodo vartotojo įgūdžius, aktyvias registracijas, sukurtus užsiėmimus su prisiregistravusių kiekiu
