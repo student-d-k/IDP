@@ -11,6 +11,9 @@ session = Session()
 
 def ui_login() -> String:
     # grazina prisiloginusio userio id arba baigia programos darba
+    print('-'*60)
+    print(f'Sveiki atvykę į įgūdžių dalinimosi platformą - IDP')
+    print('-'*60)
     users = get_users(session)
     while True:
         login = input('Prisijungimas: ')
@@ -23,26 +26,99 @@ def ui_login() -> String:
         print('Neteisingas prisijungimo vardas arba slaptažodis.')
 
 
-def ui_profile_choose_profile() -> String:
+def ui_profile_choose_user_id() -> String:
     # grazina pasirinktą vartotojo id
     users = get_users(session)
-    for user in users:
-        print(user.id, user.first_name, user.last_name)
-    ui = input('Įveskite vartotojo id: ')
-    # patikrinti ar toks id egzistuoja, jeigu ne prasom ivesti is naujo
-    return ui
+    while True:
+        for user in users:
+            print(user.id, user.first_name, user.last_name)
+        ui = input('Įveskite vartotojo id: ').strip().lower()
+        # patikrinti ar toks id egzistuoja, jeigu ne prasom ivesti is naujo
+        for user in users:
+            if ui == user.id.lower():
+                return user.id
+        print('Klaida: įveskite egzistuojantį vartotojo id')
 
 
-def ui_profile_add_lesson(user_id: String):
-    # leidžia pridėti užsiėmimą
+def ui_profile_add_delete_lesson(user_id: String):
+    # leidžia pridėti ištrinti užsiėmimą
     # galbūt leidžia pakeisti užsiėmimo laiką
-    ...
+    while True:
+        print('-'*60)
+        print(f'{user_id} užsiėmimai')
+        print('-'*60)
+        lessons = get_enrolments(session, teacher_id=user_id)
+        for lesson in lessons:
+            print(f'Mano paskaitos: {lesson.id} {lesson.name} - {lesson.skill_id}, pradžia {lesson.start.strftime('%Y %b %d %H:%M')}')
+        print('Įveskite (užsiėmimo pavadinimą, įgūdį, pradžios, pabaigos datą-laiką)')
+        print('Arba užsiėmimo id, kurį norite ištrinti')
+        print('Arba "b" - grįžti')
+        action = input('Pvz: Mokau grybauti, Grybai, 2024-11-15 04:00, 2024-11-15 07:00: ')
+        try:
+            s = action.split(',')
+            # gryzti?
+            if len(s) == 1 and s[0].strip().lower() == 'b':
+                return
+            # trinti?
+            if len(s) == 1 and s[0].strip().isdigit():
+                for l in lessons:
+                    if l.id == int(s[0].strip()):
+                        print(delete_lesson(session, l.id))
+                        break
+                else:
+                    print(f'Užsimėmimo, kurį norite ištrinti id ({s[0].strip()}) nerastas')
+            # pridėti?
+            if len(s) == 4:
+                print(create_lesson(
+                    session, 
+                    user_id, 
+                    s[0].strip(),
+                    s[1].strip(), 
+                    datetime.datetime.strptime(s[2].strip(), '%Y-%m-%d %H:%M'),
+                    datetime.datetime.strptime(s[3].strip(), '%Y-%m-%d %H:%M')))
+        except Exception as e:
+            print(f'Kažką neteisingai įvedėte')
+            print(f'Klaida: {e}')
 
+
+def ui_profile_login_lesson(user_id: String):
+    # leidžia prisijungti prie paskaitos
+    while True:
+        print('-'*60)
+        print(f'{user_id} užsiėmimai prie kurių galite ar galėsite šiandien jungtis')
+        print('-'*60)
+        lessons = get_enrolments(
+            session, 
+            user_id=user_id, 
+            start_from=datetime.datetime.now() - datetime.timedelta(minutes=10),
+            start_to=datetime.datetime.now() + datetime.timedelta(hours=14))
+        for lesson in lessons:
+            print(f'Užsiėmimas: {lesson.id} {lesson.name} - {lesson.skill_id}, pradžia {lesson.start.strftime('%Y %b %d %H:%M')}')
+        action = input('Įveskite užsiėmimo prie kurio norite prisijungti id arba b - grįžti į profilį: ').strip().lower()
+        try:
+            # gryzti?
+            if action == 'b':
+                return
+            # prisijungti
+            print(action)
+        except Exception as e:
+            print(f'Kažką neteisingai įvedėte')
+            print(f'Klaida: {e}')
+
+
+def ui_profile_logoff_lesson(user_id: String):
+    # leidžia atsijungti nuo užsiėmimo
+    # reiktu padaryti tiesiog klausima ar nori atsijungti nuo uzsiemimo, jeigu yra prisijunges 
+    # arba parasyti, kad nera nuo ko atsijungti
+    ...
 
 def ui_profile(user_id: String):
     # parodo vartotojo įgūdžius, aktyvias registracijas, sukurtus užsiėmimus su prisiregistravusių kiekiu
+    main_user_id = user_id
     while True:
-        print(user_id)
+        print('-'*60)
+        print(f'{user_id} profilis')
+        print('-'*60)
         skills = get_user_skills(session, user_id)
         for skill in skills:
             rating_name = get_user_skill_rating(session, user_id, skill.id)
@@ -51,12 +127,17 @@ def ui_profile(user_id: String):
         lessons = get_enrolments(session, teacher_id=user_id)
         for lesson in lessons:
             print(f'Mano paskaitos {lesson.name} - {lesson.skill_id}, pradžia {lesson.start.strftime('%Y %b %d %H:%M')}')
-        ui = input('Pasirinkite veiksmą (1 - kito vartotojo profilis, 2 - sukurti užsiėmimą, b - gryžti): ')
+        print('-'*60)
+        ui = input('Pasirinkite veiksmą: 1 - kito vartotojo profilis, 2 - sukurti/ištrinti užsiėmimą, 3 - prisijungti, 4 - atsijungti, b - gryžti į pagrindinį meniu: ')
         match ui:
             case '1':
-                user_id = ui_profile_choose_profile()
+                user_id = ui_profile_choose_user_id()
             case '2':
-                ui_profile_add_lesson(user_id)
+                ui_profile_add_delete_lesson(main_user_id)
+            case '3':
+                ui_profile_login_lesson(main_user_id)
+            case '4':
+                ui_profile_logoff_lesson(main_user_id)
             case 'b':
                 return
             case _:
@@ -64,8 +145,12 @@ def ui_profile(user_id: String):
 
 
 def ui_enrolments(user_id: str):
-    stmt = select(Lesson).join(LessonEnrolment).where(LessonEnrolment.user_id == user_id)
-    enrolments = session.execute(stmt).scalars().all()
+    enrolments = get_enrolments(session, user_id=user_id)
+    # stmt = select(Lesson).join(LessonEnrolment).where(LessonEnrolment.user_id == user_id)
+    # enrolments = session.execute(stmt).scalars().all()
+    print('-'*60)
+    print(f'{user_id} registracijos')
+    print('-'*60)
 
     if enrolments:
         print("Jūsų esamos registracijos:")
@@ -92,16 +177,41 @@ def ui_enrolments(user_id: str):
         
         else:
             print("Neteisinga įvestis. Prašome bandyti dar kartą.")
-            
-    
-
-
 
 
 def ui_rate_user_skill(user_id: String):
     # isspausdina kokius kitu vartotoju igudzius vartotojas yra vertines
     # leidzia pasirinkti vartotoja, igudi ir ji ivertitni
-    ...
+    print('-'*60)
+    print(f'{user_id} vertinimai')
+    print('-'*60)
+    users = get_users(session)
+    while True:
+        for u in users:
+            stmt = ( 
+                select(UserSkillRating)
+                .where((UserSkillRating.user_who_rated_id == user_id) & (UserSkillRating.user_id == u.id)))
+            ratings = session.execute(stmt).scalars().all()
+            if len(ratings) > 0:
+                for r in ratings:
+                    stmt = select(SkillRating).where(SkillRating.value == r.skill_rating_value)
+                    s = session.execute(stmt).scalars().one_or_none().name
+                    print(f'Jūs įvertinote {u.id} {u.first_name} įgūdį {r.skill_id} - {s}')
+            else:
+                print(f'{u.id} {u.first_name} neturi jūsų vertinimų')
+        print('-'*60)
+        action = input("Pasirinkite veiksmą: (vartotojo_id įgūdis vertinimas(1..3)), b - grįžti: ")
+        if action == 'b':
+            return
+        try:
+            action_id, action_skill, action_value = action.split()
+            if action_id in [user.id for user in users]:
+                print(rate_user_skill(session, user_id, action_id, action_skill, action_value))
+            else:
+                print('Klaida: tokio vartotojo id nėra')
+        except Exception as e:
+            print(f'Kažką neteisingai įvedėte')
+            print(f'Klaida: {e}')
 
 
 current_user_id = ui_login()

@@ -9,6 +9,7 @@ if __name__ == "__main__":
 else:
     from model.idp_classes import *
 
+
 def get_users(session: Session) -> List[User]:
     # pilnas User sąrašas
     stmt = select(User)
@@ -42,7 +43,7 @@ def get_user_skill_medal_count(session: Session, user_id: str, skill_id: str) ->
     # grąžina vartotojo įgūdžio ženkliukų kiekį
     stmt = ( 
         select(UserSkillMedal)
-        .where(UserSkillMedal.user_id == user_id and UserSkillMedal.skill_id == skill_id))
+        .where((UserSkillMedal.user_id == user_id) & (UserSkillMedal.skill_id == skill_id)))
     medals = session.execute(stmt).scalars().all()
     if medals is None: 
         return 0
@@ -107,26 +108,38 @@ def rate_user_skill(session: Session, user_id: str, user_to_rate_id: str, skill_
         session.rollback()
         return f'ERR: {str(e)}'
 
-    
-
 
 def create_lesson(session: Session, user_id: str, name: str, skill_id: str, start: datetime.datetime, end: datetime.datetime) -> str:
     # užsiėmimo sukūrimas
     # return 'ERR: ...', jeigu klaida
     # įrašom į lesson lentelę
     # galima padaryti tikrinimą ar nesikerta su kitais vartotojo užsiėmimais arba registracijomis į užsiėmimus
-    all_lessons = session.query(Lesson).all()
+    conflicting_lessons = (
+        session.query(Lesson)
+        .filter(
+            (Lesson.teacher == user_id) & 
+            ((Lesson.start <= start) & (Lesson.end >= start) | 
+             (Lesson.start <= end) & (Lesson.end >= end))
+        )
+        .all()
+    )
+    if conflicting_lessons:
+        return 'Klaida: Šiuo laiku jau turite sukurtų užsimėminų'
     try:
-        stmt = insert(Lesson).values(name=name, teacher=user_id, skill_id=skill_id, start=start, end=end)
-        for lesson in all_lessons:
-            if (start >= lesson.start and start <= lesson.end) or (end >= lesson.start and end <= lesson.end):
-                return("ERR: Time for the lesson is taken")
+        stmt = insert(Lesson).values(name=name, teacher=user_id, skill_id=skill_id, start=start, end=end).returning(Lesson.id)
+        ex_result = session.execute(stmt)
+        new_lesson_id = ex_result.scalar_one()
+        stmt = insert(LessonEnrolment).values(
+            lesson_id=new_lesson_id, 
+            user_id=user_id, 
+            created_on=datetime.datetime.strptime('2049-12-30', '%Y-%m-%d')
+        )
         session.execute(stmt)
         session.commit()
         return 'ok'
     except Exception as e:
         session.rollback()
-        return f'ERR: {str(e)}'
+        return f'Klaida: {str(e)}'
 
 
 def delete_lesson(session: Session, lesson_id: int) -> str:
@@ -139,6 +152,7 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
         return 'ERR: Užsiėmimas nerastas.'
     now = datetime.datetime.now()
     if lesson.start <= now <= lesson.end:
+# !!! @Aistė čia netiesa, čia sąlyga, kad užsiėmimas jau vyksta, bet nereiškia, kad užsiėmimas jau įvyko        
         return 'ERR: Užsiėmimas vis dar vyksta arba jau įvyko.'
     try:
         session.execute(delete(LessonEnrolment).where(LessonEnrolment.lesson_id == lesson_id))
@@ -148,27 +162,6 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
     except Exception as e:
         session.rollback()
         return f'ERR: {str(e)}'    
-
-# Užsiėmimo ištrynimas
-# užsiėmimo ištrynimas
-# return 'ERR: ...', jeigu klaida
-# įštrinam iš lesson lentelės ir visas registracijas,
-# jeigu užsiėmimas jau įvyko ar vyksta, tai ištrinti neleidžiama
-    lesson = session.query(Lesson).filter(Lesson.id == lesson_id).first()
-    if not lesson:
-        return 'ERR: Užsiėmimas nerastas.'
-    now = datetime.datetime.now()
-    if lesson.start <= now <= lesson.end:
-        return 'ERR: Užsiėmimas vis dar vyksta arba jau įvyko.'
-    try:
-        session.execute(delete(LessonEnrolment).where(LessonEnrolment.lesson_id == lesson_id))
-        session.execute(delete(Lesson).where(Lesson.id == lesson_id))
-        session.commit()
-        return 'Užsiėmimas ištrintas.'
-    except Exception as e:
-        session.rollback()
-        return f'ERR: {str(e)}'
-
 
 
 def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
@@ -189,6 +182,10 @@ def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
             return "Klaida: Jūs jau esate užsiregistravęs į šią paskaitą."
 
         overlapping_enrolments = session.execute(select(LessonEnrolment).join(Lesson).where(
+# @ manau neteisinga sąlyga, turėtų būti:
+# LessonEnrolment.user_id == user_id IR (
+# Lesson.start <= lesson.start <= Lesson.end ARBA
+# Lesson.start <= lesson.end <= Lesson.end)
             LessonEnrolment.user_id == user_id,
             Lesson.start <= lesson.end,
             Lesson.end >= lesson.start
@@ -210,15 +207,30 @@ def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
         session.rollback()
         return f"Klaida: {str(e)}"
 
+
 def cancel_enrolment_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     try:
+        # patikrinam ar registracija egzistuoja
         enrolment = session.execute(select(LessonEnrolment).where(
             LessonEnrolment.user_id == user_id,
             LessonEnrolment.lesson_id == lesson_id
         )).scalar_one_or_none()
         if not enrolment:
-            return "Jūs nesate užsiregistravęs į šią paskaitą."
+            return "Klaida: jūs nesate užsiregistravęs į šią paskaitą."
+        # patikrinam ar paskaita ne paties vartotojo sukurtas uzsiemimas
+        self_enrolment = session.execute(
+            select(LessonEnrolment)
+            .join(Lesson)
+            .where(
+                LessonEnrolment.user_id == user_id,
+                LessonEnrolment.lesson_id == lesson_id,
+                Lesson.teacher_id == user_id
+            )
+        ).scalar_one_or_none()
+        if not self_enrolment:
+            return 'Klaida: negalite atšaukti registracijos į savo užsiėmimą. Ištrinkite užsiėmimą'
 
+        # trinam
         session.delete(enrolment)
         session.commit()
         return "Sėkmingai atšaukėte registraciją."
@@ -232,7 +244,42 @@ def login_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     # prisijungti galima tik +-5 min nuo užsiėmimo pradžios
     # return 'ERR: ...', jeigu klaida
     # įrašom į lesson_log lentelę, jeigu tokio įrašo nėra, logged_on = datetime.datetime.now(UTC)
-    ...
+    try:
+        # err check 1
+        lesson = session.execute(select(Lesson).where(Lesson.id == lesson_id)).scalars().all()
+        if not lesson:
+            return f'Klaida: tokios paskaitos ({lesson_id}) nėra'
+        # err check 2
+        lesson_login = session.execute(
+            select(LessonLog)
+            .where((LessonLog.lesson_id == lesson_id) & (LessonLog.user_id == user_id))
+        ).scalars().all()
+        if lesson_login:
+            return f'Klaida: jau esate prisijungę prie paskaitos {lesson_id}'
+        # err check 3
+        enrolments = get_enrolments(session, user_id=user_id)
+        for e in enrolments:
+            if e.id == lesson_id:
+                current_lesson = e
+                break
+        else:
+            return f'Klaida: jūs nesate prisiregistravę prie paskaitos {lesson_id}'
+        # check uzsiemimo pradzios laikas
+        if (current_lesson.start - datetime.timedelta(minutes=5) > datetime.datetime.now() or 
+           current_lesson.start + datetime.timedelta(minutes=5) < datetime.datetime.now()):
+            return f'Klaida: negalite prisijungti prie paskaitos {lesson_id}, per anksti arba pavėlavote'
+        # prisijungimas
+        lesson_log = LessonLog(
+            lesson_id=lesson_id,
+            user_id=user_id,
+            logged_on=datetime.datetime.now(datetime.timezone.utc)
+        )
+        session.add(lesson_log)
+        session.commit()
+        return f'Sėkmingai prisijungėte prie paskaitos {lesson_id}'
+    except Exception as e:
+        session.rollback()
+        return f"Klaida: {str(e)}"
 
 
 def logoff_from_lesson(session: Session, user_id: str, lesson_id: int) -> str:
@@ -240,4 +287,43 @@ def logoff_from_lesson(session: Session, user_id: str, lesson_id: int) -> str:
     # return 'ERR: ...', jeigu klaida
     # lesson_log.logged_off priskiriam datetime.datetime.now(UTC)
     # pridedam į user_skill_medal.medal_count, jeigu prabuvo 90% laiko paskaitoje
-    ...
+    try:
+        # randam prisijungima prie paskaitos
+        lesson_login = session.execute(
+            select(LessonLog)
+            .where((LessonLog.lesson_id == lesson_id) & (LessonLog.user_id == user_id))
+        ).scalars().all()
+        if not lesson_login:
+            return f'Klaida: negalite atsijungti, nes nesate prisijungęs prie paskaitos {lesson_id}'
+        if lesson_login[0].logged_off is None:
+            lesson_login[0].logged_off = datetime.datetime.now(datetime.timezone.utc)
+            session.commit()
+            lesson = session.query(Lesson).filter(Lesson.id == lesson_id).one_or_none()
+            # check
+            if lesson.end + datetime.timedelta(minutes=5) < datetime.datetime.now():
+                return f'Sėkmingai atsijungėte iš paskaitos {lesson_id}, bet ženkliuko negavote, nes pramiegojote paskatos pabaigą'
+            # atrodo viskas ok
+            # zenkliukai
+            lesson_duration = (lesson.end - lesson.start).total_seconds()
+            session_duration = (lesson_login[0].logged_off - lesson_login[0].logged_on).total_seconds()
+            if session_duration >= 0.9 * lesson_duration:
+                # pridedam ženkliuką
+                medals = session.execute(
+                    select(UserSkillMedal)
+                    .where((UserSkillMedal.user_id == user_id) & (UserSkillMedal.skill_id == lesson.skill_id))
+                ).scalars().all()
+                if len(medals) == 0:
+                    medal_count = 1
+                else:
+                    medal_count = medals[0].medal_count + 1
+                medal = UserSkillMedal(user_id=user_id, skill_id=lesson.skill_id, medal_count=medal_count)
+                session.add(medal)
+                session.commit()
+                return f'Sėkmingai atsijungėte iš paskaitos {lesson_id} ir gavote ženkliuką (+)'
+            else:
+                return f'Sėkmingai atsijungėte iš paskaitos {lesson_id}, bet ženkliuko negavote, nes dalyvavote per mažai paskaitos laiko'
+        else:
+            return f'Klaida: negalite atsijungti, nes jau sykį atsijungėte iš paskaitos {lesson_id}'
+    except Exception as e:
+        session.rollback()
+        return f"Klaida: {str(e)}"

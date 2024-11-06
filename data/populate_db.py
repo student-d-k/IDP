@@ -12,6 +12,7 @@ try:
     cursor.execute('DELETE FROM user')
     cursor.execute('DELETE FROM skill')
     cursor.execute('DELETE FROM skill_rating')
+    cursor.execute('DELETE FROM lesson_enrolment')
     cursor.execute('DELETE FROM lesson')
     
     # šitos lenteles pildomos rankiniu būdu per sql ar db viewer
