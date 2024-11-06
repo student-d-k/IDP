@@ -151,7 +151,8 @@ def delete_lesson(session: Session, lesson_id: int) -> str:
     if not lesson:
         return 'ERR: Užsiėmimas nerastas.'
     now = datetime.datetime.now()
-    if lesson.start <= now <= lesson.end:
+    if lesson.start <= now:
+# pakeičiau, kad būtų ir kai vyko
 # !!! @Aistė čia netiesa, čia sąlyga, kad užsiėmimas jau vyksta, bet nereiškia, kad užsiėmimas jau įvyko        
         return 'ERR: Užsiėmimas vis dar vyksta arba jau įvyko.'
     try:
