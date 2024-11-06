@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete, or_
+from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, and_, insert, delete, or_, func
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 # import datetime
 from datetime import datetime, timedelta
@@ -182,7 +182,7 @@ def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
             return "Klaida: Jūs jau esate užsiregistravęs į šią paskaitą."
 
         overlapping_enrolments = session.execute(select(LessonEnrolment).join(Lesson).where(
-# @ manau neteisinga sąlyga, turėtų būti:
+# [!] manau neteisinga sąlyga, turėtų būti:
 # LessonEnrolment.user_id == user_id IR (
 # Lesson.start <= lesson.start <= Lesson.end ARBA
 # Lesson.start <= lesson.end <= Lesson.end)
@@ -201,7 +201,13 @@ def enrol_to_lesson(session: Session, user_id: str, lesson_id: int) -> str:
         )
         session.add(new_enrolment)
         session.commit()
-        return "Sėkmingai užsiregistravote į paskaitą."
+        # pasižiurim ar užsiregistravo sėkmingai, ar pakliuvo i laukiančiųių eilę
+        total_enrolments = session.execute( 
+            select(func.count(LessonEnrolment.lesson_id)).where(LessonEnrolment.lesson_id == lesson_id)).scalar()
+        if total_enrolments <= 4:
+            return 'Sėkmingai užsiregistravote į paskaitą'
+        else:
+            return 'Užsiregistravote į paskaitos laukiančiųjų eilę'
     
     except Exception as e:
         session.rollback()
@@ -215,7 +221,7 @@ def cancel_enrolment_to_lesson(session: Session, user_id: str, lesson_id: int) -
             LessonEnrolment.user_id == user_id,
             LessonEnrolment.lesson_id == lesson_id
         )).scalar_one_or_none()
-        if not enrolment:
+        if enrolment is None:
             return "Klaida: jūs nesate užsiregistravęs į šią paskaitą."
         # patikrinam ar paskaita ne paties vartotojo sukurtas uzsiemimas
         self_enrolment = session.execute(
@@ -224,10 +230,10 @@ def cancel_enrolment_to_lesson(session: Session, user_id: str, lesson_id: int) -
             .where(
                 LessonEnrolment.user_id == user_id,
                 LessonEnrolment.lesson_id == lesson_id,
-                Lesson.teacher_id == user_id
+                Lesson.teacher == user_id
             )
         ).scalar_one_or_none()
-        if not self_enrolment:
+        if self_enrolment is not None:
             return 'Klaida: negalite atšaukti registracijos į savo užsiėmimą. Ištrinkite užsiėmimą'
 
         # trinam
